@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# do_run_all — build (if needed) and run all .in_out fixtures
+# Assumes patterns already exist in ./patterns/; run do_all to regenerate.
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "=== Build ==="
+make CC=gcc build
+
+echo ""
+echo "=== Run all fixtures ==="
+make run-all

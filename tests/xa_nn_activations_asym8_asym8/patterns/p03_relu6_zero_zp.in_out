@@ -1,0 +1,14 @@
+// Pattern: relu6_zero_zp
+// Purpose: ReLU6: zero_point=0, activation_max=60 (=quantized(6) at scale=0.1). Both lower (0) and upper (60) rails exercised.
+// Requantize mode: N/A — clamp activation has no requantize step
+// NOTE: partial_sum omitted — this is an elementwise op with no MAC
+
+int tflite_single_rounding = 0;
+int num_elements = 64;
+int input_zero_point = 0;
+int output_zero_point = 0;
+int activation_min = 0;
+int activation_max = 60;
+
+int8_t input[64] = {-94, -72, 22, -105, 67, -60, 121, 13, 47, 63, -52, 99, 99, -45, -42, -112, -18, 122, 56, 91, 112, 34, 95, 83, -84, 57, 89, -58, -112, 66, 52, 33, 117, -13, -52, -86, 67, -119, -110, 66, -97, -7, -43, 51, 62, -74, 66, -38, 9, -76, -29, -111, -19, 42, -1, 120, -68, 19, -104, -14, 119, 21, 35, 100};
+int8_t golden[64] = {0, 0, 22, 0, 60, 0, 60, 13, 47, 60, 0, 60, 60, 0, 0, 0, 0, 60, 56, 60, 60, 34, 60, 60, 0, 57, 60, 0, 0, 60, 52, 33, 60, 0, 0, 0, 60, 0, 0, 60, 0, 0, 0, 51, 60, 0, 60, 0, 9, 0, 0, 0, 0, 42, 0, 60, 0, 19, 0, 0, 60, 21, 35, 60};

@@ -1,0 +1,44 @@
+There are 35 section headers, starting at offset 0xf2278:
+
+Section Headers:
+  [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            00000000 000000 000000 00      0   0  0
+  [ 1] .clib.rodata      PROGBITS        10000000 0003c0 0004b0 00   A  0   0 64
+  [ 2] .rtos.rodata      PROGBITS        100004b0 000870 0002d8 00   A  0   0 16
+  [ 3] .rodata           PROGBITS        100007c0 000b80 017100 00   A  0   0 64
+  [ 4] .clib.data        PROGBITS        100178c0 017c80 0001b0 00  WA  0   0 16
+  [ 5] .data             PROGBITS        10017a70 017e30 000450 00  WA  0   0 16
+  [ 6] .bss              NOBITS          10017ec0 018280 003910 00  WA  0   0 16
+  [ 7] .ResetVector.text PROGBITS        10800000 018280 000170 00  AX  0   0 16
+  [ 8] .ResetHandler.text PROGBITS        10800170 0183f0 000060 00  AX  0   0  8
+  [ 9] .WindowVectors.text PROGBITS        10800400 018450 00016c 00  AX  0   0  4
+  [10] .Level2InterruptVector.text PROGBITS        1080057c 0185bc 00001c 00  AX  0   0  4
+  [11] .Level3InterruptVector.text PROGBITS        1080059c 0185d8 00001c 00  AX  0   0  4
+  [12] .DebugExceptionVector.literal PROGBITS        108005b8 0185f4 000000 00  AX  0   0  4
+  [13] .DebugExceptionVector.text PROGBITS        108005bc 0185f4 000008 00  AX  0   0  4
+  [14] .NMIExceptionVector.literal PROGBITS        108005d8 0185fc 000000 00  AX  0   0  4
+  [15] .NMIExceptionVector.text PROGBITS        108005dc 0185fc 000008 00  AX  0   0  4
+  [16] .KernelExceptionVector.text PROGBITS        108005fc 018604 00000c 00  AX  0   0  4
+  [17] .UserExceptionVector.text PROGBITS        1080061c 018610 000018 00  AX  0   0  4
+  [18] .DoubleExceptionVector.text PROGBITS        1080063c 018628 000008 00  AX  0   0  4
+  [19] .text             PROGBITS        10800660 018630 05d294 00  AX  0   0 16
+  [20] .debug_aranges    PROGBITS        00000000 0758c8 0001a8 00      0   0  8
+  [21] .debug_ranges     PROGBITS        00000000 075a70 001900 00      0   0  8
+  [22] .debug_info       PROGBITS        00000000 077370 016af9 00      0   0  1
+  [23] .debug_abbrev     PROGBITS        00000000 08de69 006d7c 00      0   0  1
+  [24] .debug_line       PROGBITS        00000000 094be5 015a48 00      0   0  1
+  [25] .debug_frame      PROGBITS        00000000 0aa630 001504 00      0   0  4
+  [26] .debug_str        PROGBITS        00000000 0abb34 006ff6 01  MS  0   0  1
+  [27] .debug_loc        PROGBITS        00000000 0b2b2a 00cb58 00      0   0  1
+  [28] .xt.prop          PROGBITS        00000000 0bf682 01f728 00      0   0  1
+  [29] .xt.lit           PROGBITS        00000000 0dedaa 000718 00      0   0  1
+  [30] .xtensa.info      NOTE            00000000 0df4c2 0001f0 00      0   0  1
+  [31] .comment          PROGBITS        00000000 0df6b2 000027 01  MS  0   0  1
+  [32] .symtab           SYMTAB          00000000 0df6dc 0076c0 10     33 893  4
+  [33] .strtab           STRTAB          00000000 0e6d9c 00b2d6 00      0   0  1
+  [34] .shstrtab         STRTAB          00000000 0f2072 000203 00      0   0  1
+Key to Flags:
+  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),
+  L (link order), O (extra OS processing required), G (group), T (TLS),
+  C (compressed), x (unknown), o (OS specific), E (exclude),
+  D (mbind), p (processor specific)

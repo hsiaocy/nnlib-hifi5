@@ -1,0 +1,50 @@
+
+>>> Built: test_conv2d_sr1 (TFLITE_SINGLE_ROUNDING=1)
+#@echo ">>> Built: test_conv2d_sr0 (TFLITE_SINGLE_ROUNDING=0)"
+>>> Pattern : patterns/p00_xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s.in_out
+>>> Binary  : ./test_conv2d_sr1  (TFLITE_SINGLE_ROUNDING=1)
+
+==================================================
+Conv2D Simplified Test (stdin-based pattern)
+==================================================
+
+Read 63107 bytes from stdin
+Pattern loaded from stdin
+  input:  49x10x1  (490 bytes)
+  kernel: 10x4x1->64  (2560 bytes)
+  output: 25x5x64  (8000 bytes)
+
+Scratch size: 295 bytes
+--- Conv2D parameters ---
+  input_height    = 49
+  input_width     = 10
+  input_channels  = 1
+  kernel_height   = 10
+  kernel_width    = 4
+  out_channels    = 64
+  x_stride        = 2
+  y_stride        = 2
+  x_padding       = 1
+  y_padding       = 4
+  out_height      = 25
+  out_width       = 5
+  input_zero_bias = -83
+  out_zero_bias   = -128
+  out_data_format = 0
+  act_min/max     = -128 / 127
+  out_multiplier[0] = 1359514674
+  out_shift[0]      = -6
+  input_size      = 490  (expected 490)
+  kernel_size     = 2560  (expected 2560)
+  output_size     = 8000  (expected 8000)
+  scratch_size    = 295
+-------------------------
+
+Calling xa_nn_conv2d_std_per_chan_sym8sxasym8s()...
+
+Cycles: 36304
+Comparing with golden (8000 bytes)...
+
+==================================================
+PASS
+==================================================

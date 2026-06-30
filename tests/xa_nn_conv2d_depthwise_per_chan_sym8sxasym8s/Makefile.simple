@@ -1,0 +1,160 @@
+################################################################################
+# Makefile for Simplified Depthwise-Conv2D Test
+#
+# Target API: xa_nn_conv2d_depthwise_per_chan_sym8sxasym8s  (NNLib v4.0, no _v2)
+#
+# 支援兩種 rounding mode，各自編譯成獨立 binary：
+#   test_dwconv2d_sr1  → TFLITE_SINGLE_ROUNDING=1
+#   test_dwconv2d_sr0  → TFLITE_SINGLE_ROUNDING=0  (TFLM default)
+#
+# run-all 會根據 pattern 內的 tflite_single_rounding 自動選擇正確 binary
+#
+# Usage:
+#   make comp
+#   make run  P=patterns/p00_....in_out
+#   make run-all
+#   make run-all PATTERN_DIR=patterns
+################################################################################
+
+XTCC  ?= xt-clang
+XTRUN ?= xt-run
+
+NNLIB_BASE ?= ../../NW/TFLM/dsp/tflm/tflite-micro/tensorflow/lite/micro/tools/make/downloads/xa_nnlib_hifi5
+
+NNLIB_INC = -I$(NNLIB_BASE)/include \
+            -I$(NNLIB_BASE)/include/nnlib \
+            -I$(NNLIB_BASE)/algo/common/include \
+            -I$(NNLIB_BASE)/algo/kernels/cnn/hifi5 \
+            -I$(NNLIB_BASE)/algo/ndsp/hifi5/include
+
+HIFI5_DEFINES_BASE = -DXCHAL_HAVE_HIFI5 \
+                     -DNDEBUG \
+                     -D__XTENSA__ \
+                     -DMODEL_INT16 \
+                     -DNNLIB_V2 \
+                     -Dhifi5
+
+CFLAGS_BASE = -g -O2 $(HIFI5_DEFINES_BASE) $(NNLIB_INC) -Wall -Wno-unused-parameter
+
+# SR1: single-rounding (p00)
+CFLAGS_SR1 = $(CFLAGS_BASE) -DTFLITE_SINGLE_ROUNDING=1
+# SR0: double-rounding (p01~p10)
+CFLAGS_SR0 = $(CFLAGS_BASE) -DTFLITE_SINGLE_ROUNDING=0
+
+NNLIB_SRCS = $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_depthwise_sym8sxasym8s.c \
+             $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_depthwise.c \
+             $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_circ_buf.c \
+             $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_matXvec_sym8sxasym8s_asym8s_circ.c \
+             $(NNLIB_BASE)/algo/kernels/matXvec/hifi5/xa_nn_matmul_8x8.c \
+             $(NNLIB_BASE)/algo/kernels/matXvec/hifi5/xa_nn_matmul_asym8xasym8.c \
+             $(NNLIB_BASE)/algo/kernels/basic/hifi5/xa_nn_memmove.c \
+             $(NNLIB_BASE)/algo/common/src/xa_nnlib_common_api.c \
+             $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_std_sym8sxasym8s.c
+
+TEST_SRC   = test_dwconv2d_simple.c
+CMODEL_SRC = conv2d_depthwise_cmodel.c
+
+# Object files for each rounding mode (separate build dirs to avoid collision)
+SR1_DIR  = build_sr1
+SR0_DIR  = build_sr0
+
+SR1_TEST_OBJ   = $(SR1_DIR)/test_dwconv2d_simple.o
+SR0_TEST_OBJ   = $(SR0_DIR)/test_dwconv2d_simple.o
+SR1_CMODEL_OBJ = $(SR1_DIR)/conv2d_depthwise_cmodel.o
+SR0_CMODEL_OBJ = $(SR0_DIR)/conv2d_depthwise_cmodel.o
+
+SR1_NNLIB_OBJS = $(addprefix $(SR1_DIR)/,$(notdir $(NNLIB_SRCS:.c=.o)))
+SR0_NNLIB_OBJS = $(addprefix $(SR0_DIR)/,$(notdir $(NNLIB_SRCS:.c=.o)))
+
+TARGET_SR1 = test_dwconv2d_sr1
+TARGET_SR0 = test_dwconv2d_sr0
+
+PATTERN_DIR ?= patterns
+FIXTURE     ?= $(PATTERN_DIR)/p00_xa_nn_conv2d_depthwise_per_chan_sym8sxasym8s.in_out
+
+# ── vpath: let make find NNLIB sources by filename ──────────────────────────
+vpath %.c $(sort $(dir $(NNLIB_SRCS))) .
+
+# ── Phony ───────────────────────────────────────────────────────────────────
+.PHONY: all comp run run-all clean help
+
+all: comp
+
+comp: $(TARGET_SR1) $(TARGET_SR0)
+	@echo ""
+	@echo ">>> Built: $(TARGET_SR1) (TFLITE_SINGLE_ROUNDING=1)"
+	#@echo ">>> Built: $(TARGET_SR0) (TFLITE_SINGLE_ROUNDING=0)"
+
+# ── Build dirs ───────────────────────────────────────────────────────────────
+$(SR1_DIR) $(SR0_DIR):
+	mkdir -p $@
+
+# ── SR1 binary ───────────────────────────────────────────────────────────────
+$(SR1_DIR)/%.o: %.c | $(SR1_DIR)
+	@echo "  [SR1] Compiling $(notdir $<) ..."
+	$(XTCC) $(CFLAGS_SR1) -c $< -o $@
+
+$(TARGET_SR1): $(SR1_TEST_OBJ) $(SR1_CMODEL_OBJ) $(SR1_NNLIB_OBJS)
+	@echo ">>> Linking $@ ..."
+	$(XTCC) $(CFLAGS_SR1) -o $@ $^
+	@echo ">>> Linked $@"
+
+# ── SR0 binary ───────────────────────────────────────────────────────────────
+$(SR0_DIR)/%.o: %.c | $(SR0_DIR)
+	@echo "  [SR0] Compiling $(notdir $<) ..."
+	$(XTCC) $(CFLAGS_SR0) -c $< -o $@
+
+$(TARGET_SR0): $(SR0_TEST_OBJ) $(SR0_CMODEL_OBJ) $(SR0_NNLIB_OBJS)
+	@echo ">>> Linking $@ ..."
+	$(XTCC) $(CFLAGS_SR0) -o $@ $^
+	@echo ">>> Linked $@"
+
+# ── run: auto-select binary by tflite_single_rounding in fixture ─────────────
+run: comp
+	@if [ -n "$(P)" ]; then fixture="$(P)"; else fixture="$(FIXTURE)"; fi; \
+	if [ ! -f "$$fixture" ]; then \
+		echo "ERROR: Fixture not found: $$fixture"; exit 1; \
+	fi; \
+	sr=$$(grep -m1 "tflite_single_rounding" "$$fixture" 2>/dev/null | grep -o '[0-9]' | head -1); \
+	[ -z "$$sr" ] && sr=1; \
+	if [ "$$sr" = "1" ]; then bin="./$(TARGET_SR1)"; else bin="./$(TARGET_SR0)"; fi; \
+	echo ">>> Pattern : $$fixture"; \
+	echo ">>> Binary  : $$bin  (TFLITE_SINGLE_ROUNDING=$$sr)"; \
+	echo ""; \
+	$(XTRUN) "$$bin" < "$$fixture"
+
+# ── run-all: iterate all patterns, auto-select binary ───────────────────────
+run-all: comp
+	@echo ">>> Running all patterns under $(PATTERN_DIR)/ ..."
+	@echo ""
+	@pass=0; fail=0; \
+	for f in $(PATTERN_DIR)/p*.in_out; do \
+		[ -f "$$f" ] || continue; \
+		sr=$$(grep -m1 "tflite_single_rounding" "$$f" 2>/dev/null | grep -o '[0-9]' | head -1); \
+		[ -z "$$sr" ] && sr=1; \
+		if [ "$$sr" = "1" ]; then bin="./$(TARGET_SR1)"; else bin="./$(TARGET_SR0)"; fi; \
+		echo "--- $$(basename $$f)  [SR$$sr] ---"; \
+		result=$$($(XTRUN) "$$bin" < "$$f" 2>&1); \
+		echo "$$result" | grep -E "Pattern loaded|Scratch|PASS|FAIL|Mismatch|ERROR"; \
+		if echo "$$result" | grep -q "^PASS$$"; then pass=$$((pass+1)); \
+		else fail=$$((fail+1)); fi; \
+		echo ""; \
+	done; \
+	echo "=================================================="; \
+	echo "Results: PASS=$$pass  FAIL=$$fail"; \
+	echo "=================================================="
+
+clean:
+	rm -rf $(SR1_DIR) $(SR0_DIR) $(TARGET_SR1) $(TARGET_SR0)
+	@echo ">>> Clean done"
+
+help:
+	@echo "Usage:"
+	@echo "  make comp"
+	@echo "  make run P=patterns/p03_dilation.in_out"
+	@echo "  make run-all"
+	@echo "  make run-all PATTERN_DIR=patterns"
+	@echo ""
+	@echo "Binaries:"
+	@echo "  $(TARGET_SR1)  → TFLITE_SINGLE_ROUNDING=1"
+	@echo "  $(TARGET_SR0)  → TFLITE_SINGLE_ROUNDING=0  (TFLM default)"

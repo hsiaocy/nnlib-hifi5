@@ -1,0 +1,31 @@
+// Pattern: positive_exponent_leftshift
+// Purpose: Scale chosen so shift > 0 → left-shift branch of  nn_divide_by_power_of_two is exercised (rare path).
+// Requantize mode: double-rounding (TFLITE_SINGLE_ROUNDING=0, 32-bit two-step)
+
+int tflite_single_rounding = 0;
+int batch_size = 1;
+int input_height = 4;
+int input_width = 4;
+int input_channels = 4;
+int kernel_height = 1;
+int kernel_width = 1;
+int out_channels = 4;
+int x_stride = 1;
+int y_stride = 1;
+int x_padding = 0;
+int y_padding = 0;
+int out_height = 4;
+int out_width = 4;
+int input_zero_bias = 0;
+int out_zero_bias = 0;
+int out_data_format = 0;
+int out_activation_min = -128;
+int out_activation_max = 127;
+
+int8_t input[64] = {104, 96, 112, 8, 0, 101, 113, -64, -9, 64, -42, 5, 15, -110, 89, 92, -118, -4, -88, -72, 33, -50, 125, 61, 69, -55, -104, 59, 117, 17, 60, 97, 25, 100, -60, -53, 88, 87, -59, -74, 14, -105, -78, 11, -51, 76, -127, 7, 59, -58, 86, -25, -87, -69, -3, 70, 99, -15, 13, 75, 39, -84, 101, -67};
+int8_t kernel[16] = {66, 82, 38, 74, 25, -81, -111, -70, -85, 47, -39, -25, 5, -25, 116, -123};
+int32_t bias[4] = {-82, 234, -30, 107};
+int32_t out_multiplier[4] = {2147483647, 2147483647, 2147483647, 2147483647};
+int32_t out_shift[4] = {-65, -65, -65, -65};
+int8_t golden[64] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int32_t partial_sum[64] = {19502, -17934, -8926, 10235, 7758, -16010, 1910, 18562, 3346, -863, 5256, -7025, 2078, -6800, -12246, 1940, -16870, 12416, 15044, -1735, 7260, -13036, -11585, 8519, 376, 13828, -5899, -17494, 18492, -11668, -13941, -4704, 3566, 3129, 6210, -2709, 5142, 7116, 730, 630, -9918, 16977, -3388, -7599, -1524, 6410, 12655, -17641, 474, -1389, -10500, 14903, -6416, -919, 2489, -7561, 11266, -2769, -11532, -6740, -5516, 1492, -9557, 22359};

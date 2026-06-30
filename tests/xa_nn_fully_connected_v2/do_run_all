@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# do_run_all — run pattern harness + TC host self-test (assumes already built)
+set -euo pipefail
+cd "$(dirname "$0")"
+echo "=== FC Pattern Test ==="
+make run
+echo ""
+echo "=== FC Self-Test (TC01-15) ==="
+make run-tc

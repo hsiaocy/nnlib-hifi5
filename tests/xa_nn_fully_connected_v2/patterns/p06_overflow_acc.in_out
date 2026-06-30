@@ -1,0 +1,20 @@
+// Pattern: overflow_acc
+// Purpose: All inputs=127, all weights=127, large positive bias -> acc near INT32_MAX. Catches 32-bit overflow in MAC or SRDHM.
+// Requantize mode: MBQM (SRDHM+RoundingDivideByPOT, TFLM-style)
+
+int weight_depth = 16;
+int out_depth = 4;
+int input_zero_bias = 0;
+int out_zero_bias = 0;
+int out_activation_min = -128;
+int out_activation_max = 127;
+int out_multiplier = 16383;
+int out_shift = -31;
+
+int8_t input[16] = {127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127};
+int8_t kernel[64] = {127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127};
+int32_t bias[4] = {1000000, 1000000, 1000000, 1000000};
+int32_t out_multiplier_arr[1] = {16383};
+int32_t out_shift_arr[1] = {-31};
+int8_t golden[4] = {0, 0, 0, 0};
+int32_t partial_sum[4] = {1258064, 1258064, 1258064, 1258064};

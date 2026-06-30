@@ -1,0 +1,1 @@
+make -f Makefile.simple run P=patterns/p00_xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s.in_out

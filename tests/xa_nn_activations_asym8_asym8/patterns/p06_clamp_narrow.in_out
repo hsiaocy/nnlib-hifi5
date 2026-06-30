@@ -1,0 +1,14 @@
+// Pattern: clamp_narrow
+// Purpose: Clamp [-10,10]: majority of elements expected to hit the rails. Tests heavy-saturation throughput.
+// Requantize mode: N/A — clamp activation has no requantize step
+// NOTE: partial_sum omitted — this is an elementwise op with no MAC
+
+int tflite_single_rounding = 0;
+int num_elements = 64;
+int input_zero_point = 0;
+int output_zero_point = 0;
+int activation_min = -10;
+int activation_max = 10;
+
+int8_t input[64] = {-6, 102, 55, 112, -86, -80, 105, -17, -127, 92, -94, -87, 116, -27, -86, 85, 55, -69, -72, 33, 95, 18, -60, 51, -65, 88, 99, -104, 29, -62, 119, -49, -75, -21, 17, 68, -12, 122, -114, 85, -118, -36, -22, -17, -12, -119, -123, 78, -54, -98, -7, 87, -11, 72, -79, -29, -106, -110, 105, 101, 96, 94, 79, -55};
+int8_t golden[64] = {-6, 10, 10, 10, -10, -10, 10, -10, -10, 10, -10, -10, 10, -10, -10, 10, 10, -10, -10, 10, 10, 10, -10, 10, -10, 10, 10, -10, 10, -10, 10, -10, -10, -10, 10, 10, -10, 10, -10, 10, -10, -10, -10, -10, -10, -10, -10, 10, -10, -10, -7, 10, -10, 10, -10, -10, -10, -10, 10, 10, 10, 10, 10, -10};

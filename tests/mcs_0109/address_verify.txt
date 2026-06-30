@@ -1,0 +1,18 @@
+
+108018f8 <main>:
+
+
+
+pc有跑到
+10847308 <diag_pass>:--> bit ture PASS
+
+[ 0x10847308 0x10847308 22 ] (524582) 0x00 0x41 0x36              "entry a1,32"
+
+
+<xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s>:
+START : 1082d340 
+
+END : 
+1082dd27:	f01d                                    	retw.n
+1082ea35:	f01d                                    	retw.n <<這case run here!
+1082fd18:	f01d                                    	retw.n

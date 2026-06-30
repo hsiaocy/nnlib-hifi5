@@ -1,0 +1,2 @@
+xt-run --profile=gmon.out ./test_conv2d_sr1 < patterns/p00_xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s.in_out
+xt-gprof ./test_conv2d_sr1 gmon.out > call_graph_report.txt

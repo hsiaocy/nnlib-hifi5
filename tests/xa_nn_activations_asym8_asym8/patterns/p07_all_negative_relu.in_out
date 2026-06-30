@@ -1,0 +1,14 @@
+// Pattern: all_negative_relu
+// Purpose: All inputs negative; ReLU activation_min=0 saturates every element. Output must be all-zeros.
+// Requantize mode: N/A — clamp activation has no requantize step
+// NOTE: partial_sum omitted — this is an elementwise op with no MAC
+
+int tflite_single_rounding = 0;
+int num_elements = 64;
+int input_zero_point = 0;
+int output_zero_point = 0;
+int activation_min = 0;
+int activation_max = 127;
+
+int8_t input[64] = {-41, -45, -87, -98, -66, -126, -37, -42, -41, -24, -128, -48, -52, -25, -30, -111, -94, -99, -106, -23, -117, -105, -106, -103, -93, -18, -122, -26, -79, -66, -16, -128, -104, -17, -3, -28, -96, -17, -71, -29, -36, -7, -31, -30, -74, -44, -103, -44, -22, -50, -37, -69, -18, -38, -63, -39, -82, -72, -9, -94, -54, -20, -19, -30};
+int8_t golden[64] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
