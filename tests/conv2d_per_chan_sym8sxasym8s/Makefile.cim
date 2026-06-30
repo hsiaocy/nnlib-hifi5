@@ -1,0 +1,119 @@
+# =============================================================================
+# Makefile.cim
+# Sub-Makefile: build and run test_conv2d_cim (pure-C CModel) vs a pattern.
+#
+# Toolchain is SELECTABLE (this is the only structural difference vs
+# Makefile.hifi5, which is xt-only):
+#   TOOLCHAIN=gcc  (default)  host gcc; runs the binary directly; fast;
+#                             no Xtensa license / Singularity container.
+#   TOOLCHAIN=xt              xt-clang -> xt-run ISS; DSP int/ptr widths;
+#                             use to cross-check 32-bit overflow paths (p07).
+#
+# The CModel (conv2d_std_cim_cmodel.c) is pure C99 with no HiFi5 intrinsics,
+# so it compiles identically under both compilers and is numerically
+# bit-exact between them. gcc is the fast default for functional/RTL-golden
+# checking; xt is for DSP-width correlation.
+#
+# Variables expected from parent Makefile (or command line):
+#   PATTERN     : pattern ID, e.g. p01
+#   FIXTURE     : full path to .in_out file (C source fragment, -include'd)
+#   BUILD_DIR   : output directory for binaries
+#   TFLITE_SR   : 0 or 1 (TFLITE_SINGLE_ROUNDING compile flag)
+#   CMODEL_SRC  : path to conv2d_std_cim_cmodel.c (default: ./conv2d_std_cim_cmodel.c)
+#   CMODEL_INC  : directory containing conv2d_std_cim_cmodel.h (default: .)
+#   TOOLCHAIN   : gcc (default) | xt
+#   NNLIB_BASE  : only used when TOOLCHAIN=xt AND the test calls NNLib's
+#                 xa_nn_conv2d_std_getsize (scratch sizing). Ignored for gcc.
+#   XTENSA_CORE : only used when TOOLCHAIN=xt (locates pre-built xa_nnlib.a).
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Toolchain selection
+# ---------------------------------------------------------------------------
+TOOLCHAIN ?= gcc
+
+CFLAGS    := -O2 -std=c99 -Wall -Wno-unused-variable
+
+ifeq ($(TOOLCHAIN),gcc)
+  CC      := gcc
+  SIM     :=
+  TC_TAG  := gcc
+else ifeq ($(TOOLCHAIN),xt)
+  CC      := xt-clang
+  SIM     := xt-run
+  TC_TAG  := xt
+else
+  $(error TOOLCHAIN must be 'gcc' or 'xt', got '$(TOOLCHAIN)')
+endif
+
+# ---------------------------------------------------------------------------
+# CModel source defaults (override from parent if needed)
+# ---------------------------------------------------------------------------
+CMODEL_SRC ?= ./conv2d_std_cim_cmodel.c
+CMODEL_INC ?= .
+
+# ---------------------------------------------------------------------------
+# Sources / binary name (TC_TAG keeps gcc and xt builds side by side)
+# ---------------------------------------------------------------------------
+TEST_SRC  := test_conv2d_cim.c
+BINARY    := $(BUILD_DIR)/cim_$(PATTERN).$(TC_TAG)
+
+# ---------------------------------------------------------------------------
+# Includes / defines
+#   stdint.h is force-included BEFORE the fixture: the .in_out fragments use
+#   int8_t/int32_t but carry no #include of their own, and -include injects
+#   them ahead of the TU's own headers.
+# ---------------------------------------------------------------------------
+INCS      := -I$(CMODEL_INC)
+DEFINES   := -DTFLITE_SINGLE_ROUNDING=$(TFLITE_SR) \
+             -DFIXTURE_FILE=\"$(FIXTURE)\"
+
+# The fixture defines the input/kernel/golden globals. It must be injected
+# into the TEST translation unit ONLY -- never into the CModel TU, or the
+# globals get multiply-defined at link time. So we compile to objects:
+#   test object  : -include stdint.h -include $(FIXTURE)
+#   cmodel object: no fixture
+TEST_OBJ  := $(BUILD_DIR)/cim_$(PATTERN).$(TC_TAG).test.o
+CMOD_OBJ  := $(BUILD_DIR)/cim_$(PATTERN).$(TC_TAG).cmodel.o
+
+# NNLib is only linked under the xt toolchain (e.g. for xa_nn_conv2d_std_getsize).
+# Under gcc the pure-C CModel needs no NNLib at all.
+ifeq ($(TOOLCHAIN),xt)
+  NNLIB_INC := $(NNLIB_BASE)/include \
+               $(NNLIB_BASE)/include/nnlib \
+               $(NNLIB_BASE)/algo/common/include
+  NNLIB_LIB := $(NNLIB_BASE)/bin/$(XTENSA_CORE)/xa_nnlib.a
+  INCS      += $(addprefix -I,$(NNLIB_INC))
+  LINK_LIBS := $(NNLIB_LIB)
+else
+  LINK_LIBS :=
+endif
+
+# ---------------------------------------------------------------------------
+# Targets
+# ---------------------------------------------------------------------------
+.PHONY: build run clean
+
+build: $(BINARY)
+
+$(BINARY): $(TEST_SRC) $(CMODEL_SRC) $(FIXTURE)
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(INCS) $(DEFINES) \
+	    -include stdint.h -include $(FIXTURE) \
+	    -c $(TEST_SRC) -o $(TEST_OBJ)
+	$(CC) $(CFLAGS) $(INCS) \
+	    -c $(CMODEL_SRC) -o $(CMOD_OBJ)
+	$(CC) $(TEST_OBJ) $(CMOD_OBJ) -o $@ $(LINK_LIBS)
+	@echo "[cim/$(TC_TAG)] built $@  (fixture: $(FIXTURE))"
+
+run: build
+ifeq ($(TOOLCHAIN),gcc)
+	./$(BINARY); echo "[cim/gcc] exit=$$?"
+else
+	$(SIM) $(BINARY); echo "[cim/xt] exit=$$?"
+endif
+
+clean:
+	rm -f $(BUILD_DIR)/cim_$(PATTERN).gcc $(BUILD_DIR)/cim_$(PATTERN).xt \
+	      $(BUILD_DIR)/cim_$(PATTERN).gcc.test.o $(BUILD_DIR)/cim_$(PATTERN).gcc.cmodel.o \
+	      $(BUILD_DIR)/cim_$(PATTERN).xt.test.o  $(BUILD_DIR)/cim_$(PATTERN).xt.cmodel.o

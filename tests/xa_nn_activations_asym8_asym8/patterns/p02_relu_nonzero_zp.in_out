@@ -1,0 +1,14 @@
+// Pattern: relu_nonzero_zp
+// Purpose: ReLU: zero_point=-30, activation_min=-30. Verifies clamp uses quantized(0)=zp, not literal 0.
+// Requantize mode: N/A — clamp activation has no requantize step
+// NOTE: partial_sum omitted — this is an elementwise op with no MAC
+
+int tflite_single_rounding = 0;
+int num_elements = 64;
+int input_zero_point = -30;
+int output_zero_point = -30;
+int activation_min = -30;
+int activation_max = 127;
+
+int8_t input[64] = {-109, 81, -30, 3, -106, -114, 76, -96, -18, 61, 121, 86, -87, -2, -52, -13, -87, -112, -105, 0, 11, 30, 108, -34, 47, 18, 59, -82, -26, -8, -64, 109, -122, 78, -108, 72, -79, -40, 84, 36, 54, 32, -124, -25, -51, 1, 32, 82, -93, -66, 33, 11, 74, 23, 3, -15, -70, -47, -47, -13, -98, -47, -84, -70};
+int8_t golden[64] = {-30, 81, -30, 3, -30, -30, 76, -30, -18, 61, 121, 86, -30, -2, -30, -13, -30, -30, -30, 0, 11, 30, 108, -30, 47, 18, 59, -30, -26, -8, -30, 109, -30, 78, -30, 72, -30, -30, 84, 36, 54, 32, -30, -25, -30, 1, 32, 82, -30, -30, 33, 11, 74, 23, 3, -15, -30, -30, -30, -13, -30, -30, -30, -30};

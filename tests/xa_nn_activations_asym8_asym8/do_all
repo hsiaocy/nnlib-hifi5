@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# do_all — generate patterns, build, and run all fixtures
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "=== Step 1: Generate patterns ==="
+python3 gen_activation_patterns.py --out-dir patterns
+
+echo ""
+echo "=== Step 2: Build ==="
+make CC=gcc build
+
+echo ""
+echo "=== Step 3: Run all ==="
+make run-all

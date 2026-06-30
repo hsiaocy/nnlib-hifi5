@@ -1,0 +1,20 @@
+// Pattern: positive_shift
+// Purpose: Scale chosen so out_shift > 0 -> left-shift branch of MBQM exercised. Rare path; verifies cmodel_MBQM out_shift>0 branch.
+// Requantize mode: MBQM (SRDHM+RoundingDivideByPOT, TFLM-style)
+
+int weight_depth = 8;
+int out_depth = 4;
+int input_zero_bias = 0;
+int out_zero_bias = 0;
+int out_activation_min = -128;
+int out_activation_max = 127;
+int out_multiplier = 1073741824;
+int out_shift = 2;
+
+int8_t input[8] = {44, 25, -110, 60, 103, -7, -16, 82};
+int8_t kernel[32] = {-64, 114, -81, -48, 73, -115, 73, -98, 44, -49, 87, 98, 36, -29, 94, -92, -34, -58, -124, 23, -11, 95, -5, -69, -89, -62, -62, -97, -28, -93, 66, 69};
+int32_t bias[4] = {-183, 87, 98, -226};
+int32_t out_multiplier_arr[1] = {1073741824};
+int32_t out_shift_arr[1] = {2};
+int8_t golden[4] = {127, -128, 127, -128};
+int32_t partial_sum[4] = {5001, -8029, 4796, -2323};

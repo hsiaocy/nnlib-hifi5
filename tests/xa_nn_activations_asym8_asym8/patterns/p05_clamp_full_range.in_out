@@ -1,0 +1,14 @@
+// Pattern: clamp_full_range
+// Purpose: Clamp [-128,127]: identity, no element clamped. Golden must equal input exactly.
+// Requantize mode: N/A — clamp activation has no requantize step
+// NOTE: partial_sum omitted — this is an elementwise op with no MAC
+
+int tflite_single_rounding = 0;
+int num_elements = 64;
+int input_zero_point = 0;
+int output_zero_point = 0;
+int activation_min = -128;
+int activation_max = 127;
+
+int8_t input[64] = {-94, -3, -83, -23, -23, -54, -23, -45, -94, -79, 81, 103, 1, -14, 86, -34, -97, -70, 11, -109, -59, 79, -76, -8, 80, 46, 49, 75, 106, -79, 1, -80, 118, -59, 3, -10, -88, 9, -62, -95, -71, -119, 61, 47, -52, 76, 71, -7, -75, 63, 7, -44, -87, 59, -106, -70, 39, -112, 3, 16, -111, 110, -8, 43};
+int8_t golden[64] = {-94, -3, -83, -23, -23, -54, -23, -45, -94, -79, 81, 103, 1, -14, 86, -34, -97, -70, 11, -109, -59, 79, -76, -8, 80, 46, 49, 75, 106, -79, 1, -80, 118, -59, 3, -10, -88, 9, -62, -95, -71, -119, 61, 47, -52, 76, 71, -7, -75, 63, 7, -44, -87, 59, -106, -70, 39, -112, 3, 16, -111, 110, -8, 43};

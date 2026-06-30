@@ -1,0 +1,8 @@
+#python3.1 bin ksize
+python3.1 BinToMCS_RAMPy31.py DRAM0 4096 1
+python3.1 BinToMCS_RAMPy31.py DRAM1 4096 1
+python3.1 BinToMCS_RAMPy31.py IRAM0 4096 0
+python3.1 BinToMCS_RAMPy31.py IRAM1 4096 0
+python3.1 BinToMCS_RAMPy31.py DROM0 4096 1
+python3.1 BinToMCS_RAMPy31.py IROM0 4096 0
+python3.1 BinToMCS_RAMPy31.py SRAM 16384 0

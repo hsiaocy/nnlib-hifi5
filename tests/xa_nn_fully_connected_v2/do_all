@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# do_all — generate patterns, build, and run all tests
+set -euo pipefail
+cd "$(dirname "$0")"
+echo "=== FC CModel: full run ==="
+make run-all

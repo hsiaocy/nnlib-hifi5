@@ -1,0 +1,86 @@
+# =============================================================================
+# Makefile.hifi5
+# Sub-Makefile: build and run test_conv2d_hifi5 against a single pattern.
+#
+# Variables expected from parent Makefile (or command line):
+#   PATTERN     : pattern ID, e.g. p01  (maps to $(PATTERN)_*.in_out)
+#   FIXTURE     : full path to .in_out file (set by parent after glob)
+#   NNLIB_BASE  : root of xa_nnlib_hifi5 source tree (used for headers)
+#   XTENSA_CORE : Xtensa core name (e.g. HiFi5s_BW128_L8M_1031)
+#   BUILD_DIR   : output directory for objects and binaries
+#   TFLITE_SR   : 0 or 1 (TFLITE_SINGLE_ROUNDING compile flag)
+#   NNLIB_LIB   : path to the static lib that DEFINES the NNLib kernels.
+#                 Overridable (?=) -- see note below.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Toolchain
+# ---------------------------------------------------------------------------
+CC      := xt-clang
+SIM     := xt-run
+CFLAGS  := -O2 -Wall -Wno-unused-variable
+
+# ---------------------------------------------------------------------------
+# NNLib include paths (headers always come from the xa_nnlib source tree --
+# needed for xa_nn_conv2d_std_getsize, PREC_* enums, etc.)
+# ---------------------------------------------------------------------------
+NNLIB_INC := $(NNLIB_BASE)/include \
+             $(NNLIB_BASE)/include/nnlib \
+             $(NNLIB_BASE)/algo/common/include
+
+# ---------------------------------------------------------------------------
+# NNLib static library (the .a that DEFINES the kernel symbols).
+#
+# NOTE: foss-xtensa/nnlib-hifi5 ships SOURCE ONLY -- there is no prebuilt
+# xa_nnlib.a. However, the TFLM build already compiles the HiFi5 NNLib
+# kernels into libtensorflow-microlite.a, and the conv2d_std_v2 kernel is
+# confirmed DEFINED there (verified via:  xt-nm <lib> | grep <symbol>  -> T).
+#
+# So NNLIB_LIB defaults to the TFLM-built lib. Override on the command line
+# or in the parent Makefile if you build a standalone xa_nnlib.a instead:
+#   make ... NNLIB_LIB=/abs/path/to/xa_nnlib.a
+#
+# '?=' so a command-line / parent value wins over this default.
+# ---------------------------------------------------------------------------
+TFLM_LIB  ?= $(NNLIB_BASE)/../../../gen/xtensa_hifi5_default_xtensa_clang/lib/libtensorflow-microlite.a
+NNLIB_LIB ?= $(TFLM_LIB)
+
+# ---------------------------------------------------------------------------
+# Sources / binary name
+# ---------------------------------------------------------------------------
+TEST_SRC  := test_conv2d_hifi5.c
+BINARY    := $(BUILD_DIR)/hifi5_$(PATTERN)
+
+# ---------------------------------------------------------------------------
+# Compile flags
+# ---------------------------------------------------------------------------
+INCS     := $(addprefix -I,$(NNLIB_INC))
+DEFINES  := -DTFLITE_SINGLE_ROUNDING=$(TFLITE_SR) \
+            -DFIXTURE_FILE=\"$(FIXTURE)\"
+
+# ---------------------------------------------------------------------------
+# Targets
+# ---------------------------------------------------------------------------
+.PHONY: build run clean check-lib
+
+# Fail early with a clear message if the lib path doesn't exist.
+check-lib:
+	@test -f "$(NNLIB_LIB)" || { \
+	    echo "ERROR: NNLIB_LIB not found: $(NNLIB_LIB)"; \
+	    echo "       Override it, e.g.:"; \
+	    echo "       make ... NNLIB_LIB=/abs/path/to/libtensorflow-microlite.a"; \
+	    exit 1; }
+
+build: $(BINARY)
+
+$(BINARY): $(TEST_SRC) $(FIXTURE) | check-lib
+	$(CC) $(CFLAGS) $(INCS) $(DEFINES) \
+	    -include stdint.h -include $(FIXTURE) \
+	    -o $@ $(TEST_SRC) $(NNLIB_LIB)
+	@echo "[hifi5] built $@  (fixture: $(FIXTURE), lib: $(NNLIB_LIB))"
+
+run: build
+	$(SIM) $(BINARY)
+
+clean:
+	rm -f $(BINARY)

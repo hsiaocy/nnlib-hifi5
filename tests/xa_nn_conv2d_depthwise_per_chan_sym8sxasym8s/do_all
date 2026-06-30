@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+DIR="$(dirname "$0")"
+"$DIR/do_clean"
+"$DIR/do_comp"
+python3 "$DIR/gen_depthwise_patterns.py"
+"$DIR/do_run_all"
