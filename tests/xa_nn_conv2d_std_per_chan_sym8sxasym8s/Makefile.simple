@@ -1,24 +1,17 @@
 ################################################################################
-# Makefile for Simplified Conv2D Test
+# Makefile for Simplified Conv2D Test  (single-rounding / SR1 only)
 #
-# 支援兩種 rounding mode，各自編譯成獨立 binary：
-#   test_conv2d_sr1  → TFLITE_SINGLE_ROUNDING=1  (p00)
-#   test_conv2d_sr0  → TFLITE_SINGLE_ROUNDING=0  (p01~p10)
+#   make comp                 build test_conv2d_sr1  (TFLITE_SINGLE_ROUNDING=1)
+#   make run                  build + run on the ISS
+#   make clean
 #
-# run-all 會根據 pattern 內的 tflite_single_rounding 自動選擇正確 binary
-#
-# Usage:
-#   make comp
-#   make run  P=patterns/p00_....in_out
-#   make run-all
-#   make run-all PATTERN_DIR=patterns
+# RTL_DIAG=1 links the reftb + local-memory LSP for RTL/ISS bring-up.
 ################################################################################
 RTL_DIAG ?= 0
 LDFLAGS  ?=
 
 ifeq ($(RTL_DIAG),1)
-CFLAGS_BASE += -DRTL_DIAG=1
-LDFLAGS     += -lreftb -mlsp=min-rt-local_20260521_verilog_ok
+LDFLAGS += -lreftb -mlsp=min-rt-local_20260521_verilog_ok
 endif
 
 XTCC  ?= xt-clang
@@ -32,19 +25,9 @@ NNLIB_INC = -I$(NNLIB_BASE)/include \
             -I$(NNLIB_BASE)/algo/kernels/cnn/hifi5 \
             -I$(NNLIB_BASE)/algo/ndsp/hifi5/include
 
-HIFI5_DEFINES_BASE = -DXCHAL_HAVE_HIFI5 \
-                     -DNDEBUG \
-                     -D__XTENSA__ \
-                     -DMODEL_INT16 \
-                     -DNNLIB_V2 \
-                     -Dhifi5
-
-CFLAGS_BASE = -g -O2 $(HIFI5_DEFINES_BASE) $(NNLIB_INC) -Wall -Wno-unused-parameter
-
-# SR1: single-rounding (p00)
-CFLAGS_SR1 = $(CFLAGS_BASE) -DTFLITE_SINGLE_ROUNDING=1
-# SR0: double-rounding (p01~p10)
-# CFLAGS_SR0 = $(CFLAGS_BASE) -DTFLITE_SINGLE_ROUNDING=0
+CFLAGS = -g -O2 -Wall -Wno-unused-parameter $(NNLIB_INC) \
+         -DXCHAL_HAVE_HIFI5 -DNDEBUG -D__XTENSA__ -DMODEL_INT16 -DNNLIB_V2 -Dhifi5 \
+         -DTFLITE_SINGLE_ROUNDING=1
 
 NNLIB_SRCS = $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_std_sym8sxasym8s.orig.c \
              $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_matXvec_sym8sxasym8s_asym8s_circ.orig.c \
@@ -56,124 +39,38 @@ NNLIB_SRCS = $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_std_sym8sxasym8s.
              $(NNLIB_BASE)/algo/kernels/basic/hifi5/xa_nn_memmove.c \
              $(NNLIB_BASE)/algo/common/src/xa_nnlib_common_api.c
 
-
-# NNLIB_SRCS = ./xa_nn_conv2d_std_sym8sxasym8s.c \
-#              ./xa_nn_matXvec_sym8sxasym8s_asym8s_circ.c \
-#              $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_std_circ_buf.c \
-#              $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_conv2d_depthwise.c \
-#              $(NNLIB_BASE)/algo/kernels/cnn/hifi5/xa_nn_circ_buf.c \
-#              $(NNLIB_BASE)/algo/kernels/matXvec/hifi5/xa_nn_matmul_8x8.c \
-#              $(NNLIB_BASE)/algo/kernels/matXvec/hifi5/xa_nn_matmul_asym8xasym8.c \
-#              $(NNLIB_BASE)/algo/kernels/basic/hifi5/xa_nn_memmove.c \
-#              $(NNLIB_BASE)/algo/common/src/xa_nnlib_common_api.c
-
 TEST_NAME ?= test_conv2d_simple_0
-TEST_SRC   = $(TEST_NAME).c
+TARGET    ?= test_conv2d_sr1
+BUILD_DIR  = build_sr1
 
-# Object files for each rounding mode (separate build dirs to avoid collision)
-SR1_DIR  = build_sr1
-SR0_DIR  = build_sr0
+OBJS = $(BUILD_DIR)/$(TEST_NAME).o $(addprefix $(BUILD_DIR)/,$(notdir $(NNLIB_SRCS:.c=.o)))
 
-SR1_TEST_OBJ  = $(SR1_DIR)/$(TEST_NAME).o
-SR0_TEST_OBJ  = $(SR0_DIR)/$(TEST_NAME).o
-
-SR1_NNLIB_OBJS = $(addprefix $(SR1_DIR)/,$(notdir $(NNLIB_SRCS:.c=.o)))
-SR0_NNLIB_OBJS = $(addprefix $(SR0_DIR)/,$(notdir $(NNLIB_SRCS:.c=.o)))
-
-TARGET_SR1 = test_conv2d_sr1
-TARGET_SR0 = test_conv2d_sr0
-
-PATTERN_DIR ?= patterns
-FIXTURE     ?= $(PATTERN_DIR)/p00_xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s.in_out
-
-# ── vpath: let make find NNLIB sources by filename ──────────────────────────
+# let make find NNLIB sources (and the local test .c) by filename
 vpath %.c $(sort $(dir $(NNLIB_SRCS))) .
 
-# ── Phony ───────────────────────────────────────────────────────────────────
-.PHONY: all comp run run-all clean help
-
+.PHONY: all comp run clean help
 all: comp
 
-#comp: $(TARGET_SR1) $(TARGET_SR0)
-comp: $(TARGET_SR1) 
-	@echo ""
-	@echo ">>> Built: $(TARGET_SR1) (TFLITE_SINGLE_ROUNDING=1)"
-	#@echo ">>> Built: $(TARGET_SR0) (TFLITE_SINGLE_ROUNDING=0)"
+comp: $(TARGET)
+	@echo ">>> Built: $(TARGET) (TFLITE_SINGLE_ROUNDING=1)"
 
-# ── Build dirs ───────────────────────────────────────────────────────────────
-$(SR1_DIR) $(SR0_DIR):
+$(BUILD_DIR):
 	mkdir -p $@
 
-# ── SR1 binary ───────────────────────────────────────────────────────────────
-$(SR1_DIR)/%.o: %.c | $(SR1_DIR)
-	@echo "  [SR1] Compiling $(notdir $<) ..."
-	$(XTCC) $(CFLAGS_SR1) -c $< -o $@
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+	@echo "  [CC] $(notdir $<)"
+	$(XTCC) $(CFLAGS) -c $< -o $@
 
-$(TARGET_SR1): $(SR1_TEST_OBJ) $(SR1_NNLIB_OBJS)
+$(TARGET): $(OBJS)
 	@echo ">>> Linking $@ ..."
-	$(XTCC) $(CFLAGS_SR1) $(LDFLAGS) -o $@ $^
-	@echo ">>> Linked $@"
-
-# # ── SR0 binary ───────────────────────────────────────────────────────────────
-# $(SR0_DIR)/%.o: %.c | $(SR0_DIR)
-# 	@echo "  [SR0] Compiling $(notdir $<) ..."
-# 	$(XTCC) $(CFLAGS_SR0) -c $< -o $@
-# 
-# $(TARGET_SR0): $(SR0_TEST_OBJ) $(SR0_NNLIB_OBJS)
-# 	@echo ">>> Linking $@ ..."
-# 	$(XTCC) $(CFLAGS_SR0) -o $@ $^
-# 	@echo ">>> Linked $@"
-
-# ── run: auto-select binary by tflite_single_rounding in fixture ─────────────
-# run: comp
-# 	@if [ -n "$(P)" ]; then fixture="$(P)"; else fixture="$(FIXTURE)"; fi; \
-# 	if [ ! -f "$$fixture" ]; then \
-# 		echo "ERROR: Fixture not found: $$fixture"; exit 1; \
-# 	fi; \
-# 	sr=$$(grep -m1 "tflite_single_rounding" "$$fixture" 2>/dev/null | grep -o '[0-9]' | head -1); \
-# 	[ -z "$$sr" ] && sr=1; \
-# 	if [ "$$sr" = "1" ]; then bin="./$(TARGET_SR1)"; else bin="./$(TARGET_SR0)"; fi; \
-# 	echo ">>> Pattern : $$fixture"; \
-# 	echo ">>> Binary  : $$bin  (TFLITE_SINGLE_ROUNDING=$$sr)"; \
-# 	echo ""; \
-# 	$(XTRUN) "$$bin" < "$$fixture"
-# 	$(XTRUN) "$$bin" 
+	$(XTCC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 run: comp
-	$(XTRUN) ./$(TARGET_SR1)
-
-# ── run-all: iterate all patterns, auto-select binary ───────────────────────
-run-all: comp
-	@echo ">>> Running all patterns under $(PATTERN_DIR)/ ..."
-	@echo ""
-	@pass=0; fail=0; \
-	for f in $(PATTERN_DIR)/p*.in_out; do \
-		[ -f "$$f" ] || continue; \
-		sr=$$(grep -m1 "tflite_single_rounding" "$$f" 2>/dev/null | grep -o '[0-9]' | head -1); \
-		[ -z "$$sr" ] && sr=1; \
-		if [ "$$sr" = "1" ]; then bin="./$(TARGET_SR1)"; else bin="./$(TARGET_SR0)"; fi; \
-		echo "--- $$(basename $$f)  [SR$$sr] ---"; \
-		result=$$($(XTRUN) "$$bin" < "$$f" 2>&1); \
-		echo "$$result" | grep -E "Pattern loaded|Scratch|PASS|FAIL|Mismatch|ERROR"; \
-		if echo "$$result" | grep -q "^PASS$$"; then pass=$$((pass+1)); \
-		else fail=$$((fail+1)); fi; \
-		echo ""; \
-	done; \
-	echo "=================================================="; \
-	echo "Results: PASS=$$pass  FAIL=$$fail"; \
-	echo "=================================================="
+	$(XTRUN) ./$(TARGET)
 
 clean:
-	rm -rf $(SR1_DIR) $(SR0_DIR) $(TARGET_SR1) $(TARGET_SR0) *.log
+	rm -rf $(BUILD_DIR) $(TARGET) *.log
 	@echo ">>> Clean done"
 
 help:
-	@echo "Usage:"
-	@echo "  make comp"
-	@echo "  make run P=patterns/p03_stride2.in_out"
-	@echo "  make run-all"
-	@echo "  make run-all PATTERN_DIR=patterns"
-	@echo ""
-	@echo "Binaries:"
-	@echo "  $(TARGET_SR1)  → TFLITE_SINGLE_ROUNDING=1  (p00)"
-	@echo "  $(TARGET_SR0)  → TFLITE_SINGLE_ROUNDING=0  (p01~p10)"
+	@echo "Usage: make comp | run | clean   [RTL_DIAG=1]"

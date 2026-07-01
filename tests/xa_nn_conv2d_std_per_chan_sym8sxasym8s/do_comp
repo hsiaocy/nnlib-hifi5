@@ -1,4 +1,4 @@
-make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 RTL_DIAG=1 >> comp.log
+#make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 RTL_DIAG=1 >> comp.log
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p00_xa_nn_conv2d_std_v2_per_chan_sym8sxasym8s.in_out RTL_DIAG=1 >> comp.log
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p01_nonzero_zero_bias.in_out RTL_DIAG=1 >> comp.log
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p01_nonzero_zero_bias.in_out RTL_DIAG=1 >> comp.log
@@ -12,5 +12,5 @@ make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 RTL_DIAG=1 >> comp.lo
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p09_positive_exponent_leftshift.in_out RTL_DIAG=1 >> comp.log
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p10_asymmetric_padding.in_out RTL_DIAG=1 >> comp.log
 #make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p11_kws_first_layer.in_out RTL_DIAG=1 >> comp.log
-#make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p12_custom_shape_40x24.in_out RTL_DIAG=1 >> comp.log
+make -f Makefile.simple run TEST_NAME=test_conv2d_simple_0 FIXTURE=patterns/p12_custom_shape_40x24.in_out RTL_DIAG=1 >> comp.log
 #
